@@ -1,13 +1,14 @@
-function createDockGroup(){
+function createDockGroup(dockName){
   var dockGroupLastDist = 0;
   var dockGroupStartScale = 1;
   var simpleText = null
   var dockGroup = new Konva.Group({
     width: htmlDivWidth / 25,
     height: htmlDivWidth / 25,
-    draggable: true
+    angle: 0,
+    draggable: true,
+    name:dockName
   });
-  // dockGroup.push(dockGroup);
   //draw dock
   function drawDockImage(dockImagObj){
     var dockImage = new Konva.Image({
@@ -27,7 +28,6 @@ function createDockGroup(){
   };
   dockImagObj.src = '/assets/Dock.svg';
   //end draw
-
   function addScaleTextForDock(dockImageObject){
       simpleText = new Konva.Text({
       x:dockImageObject.attrs.x / 2,
@@ -37,21 +37,14 @@ function createDockGroup(){
       fontFamily: 'Calibri',
       fill: 'black'
     });
-
     dockGroup.add(simpleText);
   }
-console.log("dockGroup",dockGroup)
-  dockGroupTouchAndDrag(dockGroup)
-
+  dockGroupTouchAndDrag(dockGroup,dockGroupLastDist)
   layer.add(dockGroup);
   dockGroup.setZIndex(1)
 }
 
-
-
-
-
-function dockGroupTouchAndDrag(dockGroupObject){
+function dockGroupTouchAndDrag(dockGroupObject, dockGroupLastDt){
   dockGroupObject.on('touchmove dragmove' ,function(object){
     dockGroupMovingAndScaling(object.target.attrs)
 
@@ -67,14 +60,14 @@ function dockGroupTouchAndDrag(dockGroupObject){
           x: touch2.clientX,
           y: touch2.clientY
         });
-        if(!dockGroupLastDist) {
-          dockGroupLastDist = dist;
+        if(!dockGroupLastDt) {
+          dockGroupLastDt = dist;
         }
-        var scale = object.target.attrs.scaleX * dist / dockGroupLastDist;
+        var scale = object.target.attrs.scaleX * dist / dockGroupLastDt;
         object.target.attrs.scaleX = scale;
         object.target.attrs.scaleY = scale;
 
-        dockGroupLastDist = dist;
+        dockGroupLastDt = dist;
         dockGroupMovingAndScaling(object.target.attrs)
         dockGroupObject.children[1].setText(changeDockUnitLengthToFt(object.target.attrs.width * object.target.attrs.scaleX) + "'" + "*"
           +changeDockUnitLengthToFt(object.target.attrs.height * object.target.attrs.scaleY) + "'");
@@ -85,12 +78,9 @@ function dockGroupTouchAndDrag(dockGroupObject){
 
   dockGroupObject.on('touchend', function(object) {
     dockGroupLastDist = 0;
-    //  console.log("touched",object.target.attrs)
     layer.draw();
   });
 }
-
-
 
 function dockGroupMovingAndScaling(dockGroupObject){
   //TO DO
@@ -113,19 +103,103 @@ function dockGroupMovingAndScaling(dockGroupObject){
     dockGroupObject.scaleY = 2
   }
   //moving
-  //left
-  if(dockGroupObject.x < 0){
-    dockGroupObject.x = 0
+
+  // A---------D
+  // |         |
+  // |         |
+  // |         |
+  // B --------C
+  if(dockGroupObject.angle < 90){
+    //left boundry, Point B
+    if((dockGroupObject.x - Math.sin(Math.PI / changeAngleToRadians(dockGroupObject.angle)) * dockGroupObject.height * dockGroupObject.scaleY) < 0){
+      dockGroupObject.x =  Math.sin(Math.PI / changeAngleToRadians(dockGroupObject.angle)) * dockGroupObject.height * dockGroupObject.scaleY
+    }
+
+    // top boundry, point A
+    if(dockGroupObject.y < 0){
+      dockGroupObject.y = 0
+    }
+
+    //right boundry, point D
+    if((dockGroupObject.x + Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle)) * dockGroupObject.width * dockGroupObject.scaleX) > stage.attrs.width){
+      dockGroupObject.x = stage.attrs.width - Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle)) * dockGroupObject.width * dockGroupObject.scaleX;
+    }
+
+    //bottom boundry. point C
+    var ac = getSqrt(Math.pow(dockGroupObject.width * dockGroupObject.scaleX, 2) + Math.pow(dockGroupObject.height * dockGroupObject.scaleY, 2));
+    var angleBAC = Math.acos(dockGroupObject.height * dockGroupObject.scaleY / ac);
+    var angleTarget = angleBAC - Math.PI / changeAngleToRadians(dockGroupObject.angle);
+    var pointDY = Math.cos(angleTarget) * ac
+    if(dockGroupObject.y + pointDY > stage.attrs.height){
+      dockGroupObject.y = stage.attrs.height - pointDY
+    }
+
   }
-  if(dockGroupObject.y < 0){
-    dockGroupObject.y = 0
+  else if(dockGroupObject.angle < 180){
+    //left boundry, point C
+    var ca = getSqrt(Math.pow(dockGroupObject.width * dockGroupObject.scaleX, 2) + Math.pow(dockGroupObject.height * dockGroupObject.scaleY, 2));
+    var angleCAD = Math.acos(dockGroupObject.width * dockGroupObject.scaleX / ca);
+    var targetAngle = angleCAD + (Math.PI / changeAngleToRadians(dockGroupObject.angle) - Math.PI / changeAngleToRadians(90));
+    var pointCX = Math.sin(targetAngle) * ca;
+    if(dockGroupObject.x - pointCX < 0){
+      dockGroupObject.x = pointCX;
+    }
+
+    //top boundry, point B
+    var targetBAngle = 90 - (dockGroupObject.angle - 90);
+    console.log("targetBAngle",targetBAngle);
+    var targetBY = Math.cos(Math.PI / changeAngleToRadians(targetBAngle)) * dockGroupObject.height * dockGroupObject.scaleY;
+    console.log("targetBY",targetBY);
+    if(dockGroupObject.y - targetBY < 0){
+      dockGroupObject.y = targetBY;
+    }
+
+    //right boundry, point A
+    if(dockGroupObject.x > stage.attrs.width){
+      dockGroupObject.x = stage.attrs.width;
+    }
+
+    //bottom boundry, point
+    var pointDY = Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle - 90)) * dockGroupObject.width * dockGroupObject.scaleX;
+    if(dockGroupObject.y + pointDY > stage.attrs.height){
+      dockGroupObject.y = stage.attrs.height - pointDY;
+    }
+
   }
-  if(dockGroupObjectRight > stage.attrs.width){
-    dockGroupObject.x = stage.attrs.width - dockGroupObjectObjectWidth
+  else if(dockGroupObject.angle < 270){
+    var pointDX = Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle - 180)) * dockGroupObject.width * dockGroupObject.scaleX;
+    if(dockGroupObject.x - pointDX < 0){
+      dockGroupObject.x = pointDX;
+    }
   }
-  if(dockGroupObjectBottom > stage.attrs.height){
-    dockGroupObject.y = stage.attrs.height - dockGroupObjectObjectHeight
-  }
+  // else if(dockGroupObject.angle < 270){
+  //   //left boundry, point D
+  //   if(dockGroupObject.x - Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle) - Math.PI / changeAngleToRadians(180)) *
+  //     dockGroupObject.width * dockGroupObject.scaleX < 0){
+  //       console.log("asd",Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle) - Math.PI / changeAngleToRadians(180)) *
+  //         dockGroupObject.width * dockGroupObject.scaleX)
+  //       dockGroupObject.x = Math.cos(Math.PI / changeAngleToRadians(dockGroupObject.angle) - Math.PI /changeAngleToRadians(180)) *
+  //         dockGroupObject.width * dockGroupObject.scaleX
+  //     }
+  // }
+    //
+    // if(dockGroupObject.y < 0){
+    //   dockGroupObject.y = 0
+    // }
+
+
+    // if(dockGroupObject.x < 0){
+    //   dockGroupObject.x = 0
+    // }
+  // if(dockGroupObject.y < 0){
+  //   dockGroupObject.y = 0
+  // }
+  // if(dockGroupObjectRight > stage.attrs.width){
+  //   dockGroupObject.x = stage.attrs.width - dockGroupObjectObjectWidth
+  // }
+  // if(dockGroupObjectBottom > stage.attrs.height){
+  //   dockGroupObject.y = stage.attrs.height - dockGroupObjectObjectHeight
+  // }
 
   // if(dockGroupObject.x < 0){
   //   dockGroupObject.x = 0
@@ -133,7 +207,9 @@ function dockGroupMovingAndScaling(dockGroupObject){
   // if(dockGroupObject.x)
 
 }
-
+function changeAngleToRadians(angle){
+  return 180 / angle
+}
 function changeDockUnitLengthToFt(DockLength){
   return DockLength / unitLenght
 }

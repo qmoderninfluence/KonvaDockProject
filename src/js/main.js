@@ -12,8 +12,8 @@ var backgroundImage = null
 var layer = new Konva.Layer();
 var rotationObject = null;
 
-createDockGroup()
-createDockGroup()
+createDockGroup("dock 1")
+createDockGroup("dock 2")
 
 function drawImage(imageObj){
   backgroundImage = new Konva.Image({
@@ -30,7 +30,7 @@ function drawImage(imageObj){
   var startScale = 1;
 
   backgroundImage.on('touchmove dragmove' ,function(object){
-    //backgroundMovingAndScaling(object.target.attrs)
+    backgroundMovingAndScaling(object.target.attrs)
 
     if(object.evt.type === "touchmove"){
       var touch1 = object.evt.touches[0];
@@ -54,7 +54,7 @@ function drawImage(imageObj){
         lastDist = dist;
       }
     }
-    //backgroundMovingAndScaling(object.target.attrs)
+    backgroundMovingAndScaling(object.target.attrs)
     layer.draw();
   })
 
@@ -140,7 +140,8 @@ $("#unSelectAll").click(function(){
     }
 });
 $("#rotate").click(function () {
-  rotationObject.rotate(500 * Math.PI / 180);
-  console.log("rotationObject",rotationObject)
+  rotationObject.rotate(parseInt(500 * Math.PI / 180));
+  rotationObject.attrs.angle += parseInt(500 * Math.PI / 180)
   layer.draw();
+  console.log("rotationObject",rotationObject)
 });
