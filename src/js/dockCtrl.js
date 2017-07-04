@@ -9,6 +9,7 @@ function createDockGroup(dockName){
     draggable: true,
     name:dockName
   });
+  dockGroupBUffer.push(dockGroup)
   //draw dock
   function drawDockImage(dockImagObj){
     var dockImage = new Konva.Image({
@@ -186,7 +187,6 @@ function dockGroupMovingAndScaling(dockGroupObject){
     // if(dockGroupObject.y < 0){
     //   dockGroupObject.y = 0
     // }
-
 
     // if(dockGroupObject.x < 0){
     //   dockGroupObject.x = 0
